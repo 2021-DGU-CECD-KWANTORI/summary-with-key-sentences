@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from krwordrank.sentence import summarize_with_sentences
+from krwordrank.word import summarize_with_keywords
+from wordcloud import WordCloud
 from flask import Flask, request
 from flask_cors import CORS
 import kss
@@ -26,6 +28,28 @@ def summary():
         sents = 'NO SUMMARY'
     return {'summary' : sents}
 
+@app.route('/keyword', methods=['POST'])
+def keyword():
+    texts = request.json['text']
+    keywords = summarize_with_keywords(texts, min_count=3, max_length=10,
+                                       beta=0.85, max_iter=10, verbose=True)
+
+    print("키워드 : ")
+    print(keywords)
+
+    font_path = 'NanumGothic.ttf'
+    krwordrank_cloud = WordCloud(
+        font_path=font_path,
+        width=800,
+        height=800,
+        background_color="white"
+    )
+    krwordrank_cloud = krwordrank_cloud.generate_from_frequencies(keywords)
+
+    file_name = "keyword.png"
+    krwordrank_cloud.to_file(file_name)
+
+    return send_file(file_name, mimetype='image/png')
 
 if __name__ == "__main__" :
     app.run(debug=True, host='127.0.0.1', port=5001)
