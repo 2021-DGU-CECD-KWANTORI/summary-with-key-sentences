@@ -5,6 +5,7 @@ from wordcloud import WordCloud
 from flask import Flask, request
 from flask_cors import CORS
 import kss
+import base64
 
 app = Flask(__name__)
 CORS(app)
@@ -30,12 +31,15 @@ def summary():
 
 @app.route('/keyword', methods=['POST'])
 def keyword():
-    texts = request.json['text']
+    summaries = request.json['text']
+    texts = []
+    for sent in kss.split_sentences(summaries):
+        texts.append(sent)
+        print(sent)
+
     keywords = summarize_with_keywords(texts, min_count=3, max_length=10,
                                        beta=0.85, max_iter=10, verbose=True)
-
-    print("키워드 : ")
-    print(keywords)
+    print("키워드 : ", keywords)
 
     font_path = 'NanumGothic.ttf'
     krwordrank_cloud = WordCloud(
@@ -45,11 +49,13 @@ def keyword():
         background_color="white"
     )
     krwordrank_cloud = krwordrank_cloud.generate_from_frequencies(keywords)
-
     file_name = "keyword.png"
     krwordrank_cloud.to_file(file_name)
 
-    return send_file(file_name, mimetype='image/png')
+    with open('keyword.png', mode='rb') as file:
+        img = file.read()
+
+    return {'wordcloud': base64.b64encode(img).decode('utf-8')}
 
 if __name__ == "__main__" :
     app.run(debug=True, host='127.0.0.1', port=5001)
