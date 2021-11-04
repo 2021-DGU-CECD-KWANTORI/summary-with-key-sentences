@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from krwordrank.sentence import summarize_with_sentences
+from krwordrank.word import summarize_with_keywords
 from flask import Flask, request
 from flask_cors import CORS
 import kss
+from konlpy.tag import Okt
 
 app = Flask(__name__)
 CORS(app)
@@ -25,6 +27,31 @@ def summary():
     except:
         sents = 'NO SUMMARY'
     return {'summary' : sents}
+
+@app.route('/keyword', methods=['POST'])
+def keyword():
+    summaries = request.json['text']
+    texts = []
+    for sent in kss.split_sentences(summaries):
+        texts.append(sent)
+        print(sent)
+
+    keywords = summarize_with_keywords(texts, min_count=3, max_length=10,
+                                       beta=0.85, max_iter=10, verbose=True)
+
+    print("before 명사 키워드 : ", keywords)
+
+    onlyKeywords = ""
+
+    for key in keywords.keys():
+        onlyKeywords = onlyKeywords + key
+
+
+    okt = Okt()
+    nounsArray = okt.nouns(onlyKeywords)
+    print(nounsArray)
+
+    return { "keywords" : nounsArray }
 
 
 if __name__ == "__main__" :
